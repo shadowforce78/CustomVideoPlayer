@@ -38,6 +38,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
+            transition: opacity 0.3s ease; /* Ajout d'une transition pour un effet fluide */
         }
 
         .progress-container {
@@ -108,12 +109,71 @@
         .fullscreen-btn {
             margin-left: 10px;
         }
+
+        /* Styles pour les indicateurs d'action */
+        .action-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none; /* Pour ne pas interférer avec les clics */
+            z-index: 10;
+        }
+
+        .action-indicator .icon {
+            font-size: 30px;
+        }
+        
+        .action-indicator .text {
+            font-size: 18px;
+        }
+
+        .volume-level {
+            width: 100px;
+            height: 5px;
+            background-color: #444;
+            border-radius: 2px;
+            margin-left: 10px;
+            overflow: hidden;
+        }
+
+        .volume-fill {
+            height: 100%;
+            background-color: #f00;
+            width: 0%;
+        }
     </style>
 </head>
 
 <body>
     <div class="video-container" id="videoContainer">
         <video id="video" src="video.mp4"></video>
+        <!-- Ajout des indicateurs d'action -->
+        <div class="action-indicator" id="playPauseIndicator">
+            <span class="icon">⏸️</span>
+            <span class="text">Pause</span>
+        </div>
+        <div class="action-indicator" id="volumeIndicator">
+            <span class="icon">🔊</span>
+            <span class="text">Volume</span>
+            <div class="volume-level">
+                <div class="volume-fill" id="volumeFill"></div>
+            </div>
+        </div>
+        <div class="action-indicator" id="seekIndicator">
+            <span class="icon">⏩</span>
+            <span class="text">+5s</span>
+        </div>
         <div class="controls">
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar" id="progressBar"></div>
@@ -147,15 +207,82 @@
         const volumeSlider = document.getElementById('volumeSlider');
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const videoContainer = document.getElementById('videoContainer');
+        const controls = document.querySelector('.controls');
+        
+        // Variables pour gérer l'auto-hide des contrôles
+        let controlsTimeout;
+        const controlsHideDelay = 2000; // 2 secondes avant disparition
+        let isMouseOverControls = false;
+
+        // Fonction pour masquer les contrôles
+        function hideControls() {
+            // Ne pas masquer si la vidéo est en pause ou si la souris est sur les contrôles
+            if (video.paused || isMouseOverControls) return;
+            
+            controls.style.opacity = '0';
+            // Après la transition, masquer complètement pour empêcher les clics
+            setTimeout(() => {
+                if (controls.style.opacity === '0') {
+                    controls.style.pointerEvents = 'none';
+                }
+            }, 300);
+        }
+        
+        // Fonction pour afficher les contrôles
+        function showControls() {
+            controls.style.opacity = '1';
+            controls.style.pointerEvents = 'auto';
+            
+            // Réinitialiser le timer
+            clearTimeout(controlsTimeout);
+            if (!video.paused) {
+                controlsTimeout = setTimeout(hideControls, controlsHideDelay);
+            }
+        }
+        
+        // Afficher les contrôles lorsque la souris se déplace sur le conteneur vidéo
+        videoContainer.addEventListener('mousemove', showControls);
+        
+        // Éviter que les contrôles disparaissent lorsque la souris est dessus
+        controls.addEventListener('mouseenter', () => {
+            isMouseOverControls = true;
+            clearTimeout(controlsTimeout);
+        });
+        
+        controls.addEventListener('mouseleave', () => {
+            isMouseOverControls = false;
+            if (!video.paused) {
+                controlsTimeout = setTimeout(hideControls, controlsHideDelay);
+            }
+        });
+        
+        // Assurer que les contrôles sont toujours visibles quand la vidéo est en pause
+        video.addEventListener('pause', showControls);
+        
+        // Démarrer le timer pour masquer les contrôles quand la vidéo est lancée
+        video.addEventListener('play', () => {
+            if (!isMouseOverControls) {
+                controlsTimeout = setTimeout(hideControls, controlsHideDelay);
+            }
+        });
+        
+        // Réinitialiser l'état des contrôles quand la souris quitte le conteneur vidéo
+        videoContainer.addEventListener('mouseleave', () => {
+            if (!video.paused) {
+                controlsTimeout = setTimeout(hideControls, controlsHideDelay);
+            }
+        });
 
         // Play/Pause functionality
         playPauseBtn.addEventListener('click', () => {
             if (video.paused) {
                 video.play();
                 playPauseBtn.textContent = '⏸️';
+                updatePlayPauseIndicator(true);
             } else {
                 video.pause();
                 playPauseBtn.textContent = '▶️';
+                updatePlayPauseIndicator(false);
             }
         });
 
@@ -198,12 +325,14 @@
         muteBtn.addEventListener('click', () => {
             video.muted = !video.muted;
             updateVolumeUI();
+            updateVolumeIndicator();
         });
 
         volumeSlider.addEventListener('input', () => {
             video.volume = volumeSlider.value;
             video.muted = (video.volume === 0);
             updateVolumeUI();
+            updateVolumeIndicator();
         });
 
         // Initialize volume to match slider
@@ -287,6 +416,141 @@
             } else {
                 fullscreenBtn.textContent = '⛶'; // Icône d'entrée en plein écran
             }
+        }
+
+        // Configuration des raccourcis clavier
+        document.addEventListener('keydown', (e) => {
+            // Vérifier si le focus est sur le player ou ses éléments
+            const isPlayerFocused = videoContainer.contains(document.activeElement) || 
+                                   document.activeElement === document.body;
+            
+            if (!isPlayerFocused) return;
+            
+            switch (e.code) {
+                case 'Space': // Barre d'espace pour play/pause
+                    e.preventDefault(); // Empêcher le défilement de la page
+                    if (video.paused) {
+                        video.play();
+                        playPauseBtn.textContent = '⏸️';
+                        updatePlayPauseIndicator(true);
+                    } else {
+                        video.pause();
+                        playPauseBtn.textContent = '▶️';
+                        updatePlayPauseIndicator(false);
+                    }
+                    break;
+                    
+                case 'ArrowRight': // Flèche droite pour avancer
+                    e.preventDefault();
+                    const forwardSeconds = 5;
+                    video.currentTime = Math.min(video.currentTime + forwardSeconds, video.duration);
+                    updateSeekIndicator('forward', forwardSeconds);
+                    showControls(); // Afficher les contrôles lors de l'utilisation des raccourcis
+                    break;
+                    
+                case 'ArrowLeft': // Flèche gauche pour reculer
+                    e.preventDefault();
+                    const backwardSeconds = 5;
+                    video.currentTime = Math.max(video.currentTime - backwardSeconds, 0);
+                    updateSeekIndicator('backward', backwardSeconds);
+                    showControls();
+                    break;
+                    
+                case 'ArrowUp': // Flèche haut pour augmenter le volume
+                    e.preventDefault();
+                    // Augmenter le volume de 10%
+                    video.volume = Math.min(video.volume + 0.1, 1);
+                    video.muted = false;
+                    updateVolumeUI();
+                    updateVolumeIndicator();
+                    showControls();
+                    break;
+                    
+                case 'ArrowDown': // Flèche bas pour diminuer le volume
+                    e.preventDefault();
+                    // Diminuer le volume de 10%
+                    video.volume = Math.max(video.volume - 0.1, 0);
+                    if (video.volume === 0) {
+                        video.muted = true;
+                    }
+                    updateVolumeUI();
+                    updateVolumeIndicator();
+                    showControls();
+                    break;
+            }
+        });
+
+        // Rendre le conteneur vidéo focusable
+        videoContainer.tabIndex = "-1";
+        video.addEventListener('click', () => {
+            videoContainer.focus(); // Focus sur le conteneur quand on clique sur la vidéo
+        });
+
+        // Assurer que les contrôles sont focusables mais ne perturbent pas la navigation
+        controls.addEventListener('keydown', (e) => {
+            // Empêcher que les touches de navigation standard soient captées par les contrôles
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.stopPropagation(); // Ne pas interrompre la navigation habituelle dans les contrôles
+            }
+        });
+
+        // Récupération des éléments d'indicateurs
+        const playPauseIndicator = document.getElementById('playPauseIndicator');
+        const volumeIndicator = document.getElementById('volumeIndicator');
+        const seekIndicator = document.getElementById('seekIndicator');
+        const volumeFill = document.getElementById('volumeFill');
+        
+        // Fonction pour afficher un indicateur
+        function showIndicator(indicator, duration = 700) {
+            indicator.style.opacity = '1';
+            setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, duration);
+        }
+        
+        // Fonction pour mettre à jour l'indicateur de play/pause
+        function updatePlayPauseIndicator(isPlaying) {
+            playPauseIndicator.querySelector('.icon').textContent = isPlaying ? '▶️' : '⏸️';
+            playPauseIndicator.querySelector('.text').textContent = isPlaying ? 'Lecture' : 'Pause';
+            showIndicator(playPauseIndicator);
+        }
+        
+        // Fonction pour mettre à jour l'indicateur de volume
+        function updateVolumeIndicator() {
+            const volumeIcon = volumeIndicator.querySelector('.icon');
+            const volumeText = volumeIndicator.querySelector('.text');
+            
+            if (video.muted || video.volume === 0) {
+                volumeIcon.textContent = '🔇';
+                volumeText.textContent = 'Muet';
+                volumeFill.style.width = '0%';
+            } else {
+                if (video.volume > 0.5) {
+                    volumeIcon.textContent = '🔊';
+                } else {
+                    volumeIcon.textContent = '🔉';
+                }
+                volumeText.textContent = `${Math.round(video.volume * 100)}%`;
+                volumeFill.style.width = `${video.volume * 100}%`;
+            }
+            
+            showIndicator(volumeIndicator);
+        }
+        
+        // Fonction pour mettre à jour l'indicateur de recherche
+        function updateSeekIndicator(direction, seconds) {
+            const seekIcon = seekIndicator.querySelector('.icon');
+            const seekText = seekIndicator.querySelector('.text');
+            
+            if (direction === 'forward') {
+                seekIcon.textContent = '⏩';
+                seekText.textContent = `+${seconds}s`;
+            } else {
+                seekIcon.textContent = '⏪';
+                seekText.textContent = `-${seconds}s`;
+            }
+            
+            showIndicator(seekIndicator);
         }
     </script>
 </body>
