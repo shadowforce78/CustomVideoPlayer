@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur Vidéo Custom</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #111;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .video-container {
+            position: relative;
+            width: 640px;
+            max-width: 100%;
+        }
+        video {
+            width: 100%;
+            border-radius: 10px;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: #444;
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #f00;
+            border-radius: 4px;
+            width: 0%;
+        }
+        .buttons-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .left-controls, .right-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .volume-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .volume-slider {
+            width: 80px;
+            cursor: pointer;
+            background: #444;
+            height: 5px;
+            border-radius: 2px;
+        }
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: white;
+        }
+        button {
+            background: transparent;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .file-input {
+            display: none;
+        }
+        .fullscreen-btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="video-container" id="videoContainer">
+        <video id="video" src="video.mp4"></video>
+        <div class="controls">
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="buttons-container">
+                <div class="left-controls">
+                    <button id="playPause">▶️</button>
+                    <button id="loadVideo">📁</button>
+                    <input type="file" id="videoInput" class="file-input" accept="video/*">
+                </div>
+                <div class="right-controls">
+                    <div class="volume-control">
+                        <button id="muteBtn">🔊</button>
+                        <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1" value="1">
+                    </div>
+                    <button id="fullscreenBtn" class="fullscreen-btn">⛶</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const video = document.getElementById('video');
+        const playPauseBtn = document.getElementById('playPause');
+        const loadVideoBtn = document.getElementById('loadVideo');
+        const videoInput = document.getElementById('videoInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const muteBtn = document.getElementById('muteBtn');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const videoContainer = document.getElementById('videoContainer');
+
+        // Play/Pause functionality
+        playPauseBtn.addEventListener('click', () => {
+            if (video.paused) {
+                video.play();
+                playPauseBtn.textContent = '⏸️';
+            } else {
+                video.pause();
+                playPauseBtn.textContent = '▶️';
+            }
+        });
+        
+        // Load video functionality
+        loadVideoBtn.addEventListener('click', () => {
+            videoInput.click();
+        });
+        
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            
+            if (file) {
+                const videoURL = URL.createObjectURL(file);
+                video.src = videoURL;
+                
+                video.pause();
+                playPauseBtn.textContent = '▶️';
+                progressBar.style.width = '0%';
+            }
+        });
+        
+        // Progress bar functionality
+        video.addEventListener('timeupdate', () => {
+            const percentage = (video.currentTime / video.duration) * 100;
+            progressBar.style.width = `${percentage}%`;
+        });
+        
+        progressContainer.addEventListener('click', (e) => {
+            const rect = progressContainer.getBoundingClientRect();
+            const clickPosition = (e.clientX - rect.left) / rect.width;
+            
+            video.currentTime = clickPosition * video.duration;
+        });
+        
+        video.addEventListener('loadedmetadata', () => {
+            progressBar.style.width = '0%';
+        });
+        
+        // Volume control functionality
+        muteBtn.addEventListener('click', () => {
+            video.muted = !video.muted;
+            updateVolumeUI();
+        });
+        
+        volumeSlider.addEventListener('input', () => {
+            video.volume = volumeSlider.value;
+            video.muted = (video.volume === 0);
+            updateVolumeUI();
+        });
+        
+        // Initialize volume to match slider
+        video.volume = volumeSlider.value;
+        
+        // Function to update volume UI
+        function updateVolumeUI() {
+            if (video.muted || video.volume === 0) {
+                muteBtn.textContent = '🔇';
+                volumeSlider.value = 0;
+            } else {
+                // Change icon based on volume level
+                if (video.volume > 0.5) {
+                    muteBtn.textContent = '🔊';
+                } else {
+                    muteBtn.textContent = '🔉';
+                }
+                
+                if (!video.muted) {
+                    volumeSlider.value = video.volume;
+                }
+            }
+        }
+
+        // Fonctionnalité de plein écran
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+
+        // Détecter les changements de plein écran pour mettre à jour l'icône
+        document.addEventListener('fullscreenchange', updateFullscreenButton);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+        document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+        document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+
+        // Fonction pour basculer en mode plein écran
+        function toggleFullscreen() {
+            if (document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement) {
+                // Si déjà en plein écran, sortir du plein écran
+                exitFullscreen();
+            } else {
+                // Sinon, activer le plein écran
+                enterFullscreen(videoContainer);
+            }
+        }
+
+        // Entrer en mode plein écran
+        function enterFullscreen(element) {
+            if (element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if (element.webkitRequestFullscreen) { // Safari
+                element.webkitRequestFullscreen();
+            } else if (element.mozRequestFullScreen) { // Firefox
+                element.mozRequestFullScreen();
+            } else if (element.msRequestFullscreen) { // IE/Edge
+                element.msRequestFullscreen();
+            }
+        }
+
+        // Sortir du mode plein écran
+        function exitFullscreen() {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) { // Safari
+                document.webkitExitFullscreen();
+            } else if (document.mozCancelFullScreen) { // Firefox
+                document.mozCancelFullScreen();
+            } else if (document.msExitFullscreen) { // IE/Edge
+                document.msExitFullscreen();
+            }
+        }
+
+        // Mettre à jour l'icône du bouton plein écran
+        function updateFullscreenButton() {
+            if (document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement) {
+                fullscreenBtn.textContent = '⮽'; // Icône de sortie de plein écran
+            } else {
+                fullscreenBtn.textContent = '⛶'; // Icône d'entrée en plein écran
+            }
+        }
+    </script>
+</body>
+</html>
