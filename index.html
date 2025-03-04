@@ -24,17 +24,18 @@
 
         video {
             width: 100%;
-            border-radius: 10px;
+            border-radius: 10px 10px 10px 10px; /* Maintenir les arrondis sur tous les coins de la vidéo */
+            display: block; /* Assurer que la vidéo n'a pas de marge inférieure implicite */
         }
 
         .controls {
             position: absolute;
-            bottom: 10px;
+            bottom: 0; /* Modifié de 10px à 0 pour éliminer l'espace */
             left: 0;
             right: 0;
             background: rgba(0, 0, 0, 0.5);
             padding: 10px;
-            border-radius: 5px;
+            border-radius: 10px 10px 0 0; /* Modifié pour arrondir seulement les coins supérieurs */
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -62,6 +63,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
+            padding-bottom: 5px; /* Ajouter un peu d'espace entre les boutons et le bord inférieur */
         }
 
         .left-controls,
