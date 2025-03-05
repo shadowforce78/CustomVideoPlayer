@@ -54,7 +54,8 @@
             border-radius: 4px;
             cursor: pointer;
             position: relative;
-            margin-bottom: 5px; /* Espace pour la prévisualisation */
+            margin-bottom: 5px;
+            /* Espace pour la prévisualisation */
         }
 
         .progress-bar {
@@ -209,7 +210,8 @@
         /* Styles pour la prévisualisation au survol */
         .preview-container {
             position: absolute;
-            bottom: 30px; /* Position au-dessus de la barre de progression */
+            bottom: 30px;
+            /* Position au-dessus de la barre de progression */
             background-color: rgba(0, 0, 0, 0.8);
             border-radius: 4px;
             padding: 5px;
@@ -218,7 +220,8 @@
             align-items: center;
             transform: translateX(-50%);
             z-index: 30;
-            pointer-events: none; /* Évite d'interférer avec les interactions */
+            pointer-events: none;
+            /* Évite d'interférer avec les interactions */
         }
 
         .preview-thumbnail {
@@ -232,13 +235,16 @@
             align-items: center;
             color: white;
             font-size: 12px;
-            overflow: hidden; /* Pour s'assurer que l'image reste dans le cadre */
+            overflow: hidden;
+            /* Pour s'assurer que l'image reste dans le cadre */
         }
 
-        .preview-thumbnail img, .preview-thumbnail canvas {
+        .preview-thumbnail img,
+        .preview-thumbnail canvas {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* S'assurer que l'image remplit bien le cadre */
+            object-fit: cover;
+            /* S'assurer que l'image remplit bien le cadre */
         }
 
         /* Canvas caché utilisé pour l'extraction de frames */
@@ -256,10 +262,47 @@
         .pip-btn {
             margin-left: 5px;
         }
-        
+
         /* Adaptation pour ajouter de l'espace dans les contrôles droits */
         .right-controls {
-            flex-wrap: wrap; /* Permet aux contrôles de passer à la ligne si besoin */
+            flex-wrap: wrap;
+            /* Permet aux contrôles de passer à la ligne si besoin */
+        }
+
+        /* Styles pour le menu de vitesse */
+        .speed-menu {
+            position: absolute;
+            bottom: 60px;
+            right: 50px;
+            /* Position différente du menu qualité */
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 20;
+        }
+
+        .speed-option {
+            color: white;
+            padding: 5px 15px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .speed-option:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .speed-option.active {
+            background-color: rgba(255, 0, 0, 0.6);
+        }
+
+        /* Style pour le bouton de vitesse */
+        .speed-btn {
+            margin-left: 5px;
         }
     </style>
 </head>
@@ -303,6 +346,8 @@
                     <input type="file" id="videoInput" class="file-input" accept="video/*">
                     <!-- Ajout de l'affichage du temps -->
                     <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
+                    <!-- Ajout du bouton de vitesse dans les contrôles gauche -->
+                    <button id="speedBtn" class="speed-btn" title="Vitesse de lecture">1x</button>
                 </div>
                 <div class="right-controls">
                     <div class="volume-control">
@@ -323,6 +368,16 @@
             <div class="quality-option" data-quality="720p">720p</div>
             <div class="quality-option" data-quality="480p">480p</div>
             <div class="quality-option" data-quality="360p">360p</div>
+        </div>
+        <!-- Ajout du menu de vitesse de lecture -->
+        <div class="speed-menu" id="speedMenu">
+            <div class="speed-option" data-speed="0.25">0.25x</div>
+            <div class="speed-option" data-speed="0.5">0.5x</div>
+            <div class="speed-option" data-speed="0.75">0.75x</div>
+            <div class="speed-option" data-speed="1.0">1x (Normal)</div>
+            <div class="speed-option" data-speed="1.25">1.25x</div>
+            <div class="speed-option" data-speed="1.5">1.5x</div>
+            <div class="speed-option" data-speed="2.0">2x</div>
         </div>
     </div>
 
@@ -346,6 +401,12 @@
         const previewThumbnail = document.getElementById('previewThumbnail');
         const previewTime = document.getElementById('previewTime');
         const pipBtn = document.getElementById('pipBtn');
+        const speedBtn = document.getElementById('speedBtn');
+        const speedMenu = document.getElementById('speedMenu');
+        const speedOptions = document.querySelectorAll('.speed-option');
+
+        // Ajouter une variable pour stocker la vitesse actuelle
+        let currentSpeed = 1.0;
 
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
@@ -470,7 +531,7 @@
         video.addEventListener('loadedmetadata', () => {
             progressBar.style.width = '0%';
             updateTimeDisplay();
-            
+
             // Configurer la prévisualisation pour le fichier nouvellement chargé
             // (pour une implémentation réelle, nous générerions ici les vignettes de prévisualisation)
             previewThumbnail.innerHTML = 'Prévisualisation<br>(survol pour voir)';
@@ -624,6 +685,32 @@
                     }
                     updateVolumeUI();
                     updateVolumeIndicator();
+                    showControls();
+                    break;
+
+                // Raccourcis pour la vitesse: Shift+> pour accélérer, Shift+< pour ralentir
+                case 'Period':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        const nextSpeed = getNextSpeed(currentSpeed, 'up');
+                        changePlaybackSpeed(nextSpeed);
+                        showControls();
+                    }
+                    break;
+
+                case 'Comma':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        const nextSpeed = getNextSpeed(currentSpeed, 'down');
+                        changePlaybackSpeed(nextSpeed);
+                        showControls();
+                    }
+                    break;
+
+                // Touche 'R' pour revenir à la vitesse normale
+                case 'KeyR':
+                    e.preventDefault();
+                    changePlaybackSpeed(1.0);
                     showControls();
                     break;
             }
@@ -871,21 +958,21 @@
         progressContainer.addEventListener('mousemove', (e) => {
             // Afficher la prévisualisation
             previewContainer.style.display = 'flex';
-            
+
             // Calculer la position relative du curseur dans la barre de progression
             const rect = progressContainer.getBoundingClientRect();
             const position = (e.clientX - rect.left) / rect.width;
-            
+
             // Calculer la position horizontale de la prévisualisation
             const previewX = e.clientX - rect.left;
             previewContainer.style.left = `${previewX}px`;
-            
+
             // Calculer le temps correspondant à la position
             const previewTimeInSeconds = video.duration * position;
-            
+
             // Mettre à jour l'affichage du temps de prévisualisation
             previewTime.textContent = formatTime(previewTimeInSeconds);
-            
+
             // Essayer d'extraire une vignette pour ce temps
             extractThumbnail(previewTimeInSeconds).then(dataURL => {
                 if (dataURL) {
@@ -897,12 +984,12 @@
                 }
             });
         });
-        
+
         // Cacher la prévisualisation quand la souris quitte la barre de progression
         progressContainer.addEventListener('mouseleave', () => {
             previewContainer.style.display = 'none';
         });
-        
+
         // Assurer que la prévisualisation disparaît lors du clic sur la barre de progression
         progressContainer.addEventListener('click', () => {
             // Un court délai pour permettre de voir un aperçu rapide de la position sélectionnée
@@ -914,10 +1001,10 @@
         // Définir les nouvelles constantes pour l'extraction d'images
         const thumbnailCanvas = document.getElementById('thumbnailCanvas');
         const thumbnailContext = thumbnailCanvas.getContext('2d');
-        
+
         // Stockage des vignettes générées pour éviter de les recalculer
         const thumbnails = {};
-        
+
         // Configuration pour l'extraction de frames
         const thumbnailWidth = 160;
         const thumbnailHeight = 90;
@@ -925,7 +1012,7 @@
         // Initialiser le canvas avec les dimensions souhaitées
         thumbnailCanvas.width = thumbnailWidth;
         thumbnailCanvas.height = thumbnailHeight;
-        
+
         // Fonction pour extraire une frame de la vidéo à un moment donné
         function extractThumbnail(time) {
             // Vérifier si la vignette est déjà extraite pour ce temps
@@ -933,48 +1020,48 @@
             if (thumbnails[roundedTime]) {
                 return thumbnails[roundedTime];
             }
-            
+
             // Si la vidéo n'est pas chargée ou la durée est invalide, retourner null
             if (!video.duration || isNaN(video.duration) || time > video.duration) {
                 return null;
             }
-            
+
             try {
                 // Stocker la position actuelle de lecture
                 const currentTime = video.currentTime;
                 const isPaused = video.paused;
-                
+
                 // Créer un élément vidéo temporaire pour ne pas perturber la lecture actuelle
                 const tempVideo = document.createElement('video');
                 tempVideo.src = video.src;
                 tempVideo.currentTime = time;
-                
+
                 // Définir une promesse pour attendre que la vidéo soit prête
                 return new Promise((resolve) => {
                     tempVideo.addEventListener('loadeddata', function onLoaded() {
                         // Dessiner la frame sur le canvas
                         thumbnailContext.drawImage(tempVideo, 0, 0, thumbnailWidth, thumbnailHeight);
-                        
+
                         // Convertir le canvas en URL de données
                         const dataURL = thumbnailCanvas.toDataURL('image/jpeg');
-                        
+
                         // Stocker l'URL pour une utilisation future
                         thumbnails[roundedTime] = dataURL;
-                        
+
                         // Nettoyer
                         tempVideo.removeEventListener('loadeddata', onLoaded);
                         tempVideo.pause();
                         tempVideo.src = '';
                         tempVideo.load();
-                        
+
                         resolve(dataURL);
                     });
-                    
+
                     // Gérer le cas où le chargement échoue
                     tempVideo.addEventListener('error', () => {
                         resolve(null);
                     });
-                    
+
                     // Démarrer le chargement de la vidéo
                     tempVideo.load();
                 });
@@ -983,14 +1070,14 @@
                 return null;
             }
         }
-        
+
         // Fonction pour précalculer des vignettes à intervalles réguliers
         function generateThumbnails() {
             if (!video.duration || isNaN(video.duration)) return;
-            
+
             // Générer des vignettes tous les 5% de la vidéo (ou à un autre intervalle)
             const interval = Math.max(5, Math.floor(video.duration / 20));
-            
+
             // Utiliser setTimeout pour ne pas bloquer l'interface
             let i = 0;
             function generateNext() {
@@ -1002,7 +1089,7 @@
                     });
                 }
             }
-            
+
             // Commencer le processus de génération
             generateNext();
         }
@@ -1011,10 +1098,10 @@
         video.addEventListener('loadedmetadata', () => {
             progressBar.style.width = '0%';
             updateTimeDisplay();
-            
+
             // Message initial
             previewThumbnail.innerHTML = 'Chargement des vignettes...';
-            
+
             // Commencer à générer les vignettes après un court délai
             setTimeout(() => {
                 generateThumbnails();
@@ -1025,7 +1112,7 @@
         function isPictureInPictureSupported() {
             return document.pictureInPictureEnabled && !video.disablePictureInPicture;
         }
-        
+
         // Fonction pour basculer le mode Picture-in-Picture
         async function togglePictureInPicture() {
             try {
@@ -1033,7 +1120,7 @@
                     showNotification('Picture-in-Picture non supporté par votre navigateur', '⚠️');
                     return;
                 }
-                
+
                 if (document.pictureInPictureElement) {
                     // Si déjà en mode PiP, sortir du mode
                     await document.exitPictureInPicture();
@@ -1046,23 +1133,23 @@
                 showNotification('Erreur: ' + error.message, '⚠️');
             }
         }
-        
+
         // Gestionnaire d'événements pour le bouton PiP
         pipBtn.addEventListener('click', togglePictureInPicture);
-        
+
         // Mise à jour de l'état du bouton PiP quand l'état change
         video.addEventListener('enterpictureinpicture', () => {
             pipBtn.textContent = '⏏️'; // Icône pour sortir du mode PiP
             pipBtn.title = 'Quitter le Picture-in-Picture';
             showNotification('Picture-in-Picture activé', '📺');
         });
-        
+
         video.addEventListener('leavepictureinpicture', () => {
             pipBtn.textContent = '📺'; // Icône pour entrer en mode PiP
             pipBtn.title = 'Picture-in-Picture';
             showNotification('Picture-in-Picture désactivé', '📺');
         });
-        
+
         // Désactiver le bouton PiP s'il n'est pas supporté
         window.addEventListener('load', () => {
             if (!isPictureInPictureSupported()) {
@@ -1071,21 +1158,21 @@
                 pipBtn.style.opacity = '0.5';
             }
         });
-        
+
         // Fonction pour afficher une notification générique
         function showNotification(message, icon = '📌') {
             // Créer un élément de notification temporaire (réutiliser le style des indicateurs d'action)
             const notification = document.createElement('div');
             notification.className = 'action-indicator';
             notification.style.opacity = '1';
-            
+
             notification.innerHTML = `
                 <span class="icon">${icon}</span>
                 <span class="text">${message}</span>
             `;
-            
+
             videoContainer.appendChild(notification);
-            
+
             // Faire disparaître la notification après un délai
             setTimeout(() => {
                 notification.style.opacity = '0';
@@ -1094,22 +1181,165 @@
                 }, 300);
             }, 2000);
         }
-        
+
         // Ajouter un raccourci clavier pour le mode PiP (touche 'P')
         document.addEventListener('keydown', (e) => {
             // Vérifier si le focus est sur le player ou ses éléments
             const isPlayerFocused = videoContainer.contains(document.activeElement) ||
-                                   document.activeElement === document.body;
-            
+                document.activeElement === document.body;
+
             if (!isPlayerFocused) return;
-            
+
             if (e.code === 'KeyP') {
                 e.preventDefault();
                 togglePictureInPicture();
                 showControls();
             }
-            
-            // ...existing code for other keyboard shortcuts...
+        });
+
+        // Gestion du bouton de vitesse pour afficher/masquer le menu de vitesse
+        speedBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Empêcher de propager jusqu'au document
+
+            // Masquer le menu de qualité s'il est ouvert
+            if (qualityMenu.style.display === 'flex') {
+                qualityMenu.style.display = 'none';
+            }
+
+            // Basculer la visibilité du menu de vitesse
+            if (speedMenu.style.display === 'flex') {
+                speedMenu.style.display = 'none';
+            } else {
+                speedMenu.style.display = 'flex';
+
+                // Positionner correctement le menu par rapport au bouton de vitesse
+                const speedBtnRect = speedBtn.getBoundingClientRect();
+                const containerRect = videoContainer.getBoundingClientRect();
+
+                // Calculer la position relative au conteneur vidéo
+                speedMenu.style.bottom = '60px';
+                speedMenu.style.left = `${speedBtnRect.left - containerRect.left}px`;
+            }
+        });
+
+        // Cacher le menu de vitesse quand on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if (!speedMenu.contains(e.target) && e.target !== speedBtn) {
+                speedMenu.style.display = 'none';
+            }
+        });
+
+        // Gérer la sélection de vitesse
+        speedOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const speed = parseFloat(option.getAttribute('data-speed'));
+                changePlaybackSpeed(speed);
+
+                // Marquer l'option active
+                speedOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+
+                // Fermer le menu après sélection
+                speedMenu.style.display = 'none';
+            });
+        });
+
+        // Fonction pour changer la vitesse de lecture
+        function changePlaybackSpeed(speed) {
+            if (speed === currentSpeed) return;
+
+            // Mettre à jour la vitesse de lecture
+            video.playbackRate = speed;
+            currentSpeed = speed;
+
+            // Mettre à jour le texte du bouton
+            speedBtn.textContent = `${speed}x`;
+
+            // Notifier l'utilisateur
+            showSpeedChangeNotification(speed);
+        }
+
+        // Fonction pour afficher une notification de changement de vitesse
+        function showSpeedChangeNotification(speed) {
+            let speedText;
+            let icon = '⏱️';
+
+            if (speed < 1.0) {
+                speedText = `Ralenti (${speed}x)`;
+                icon = '🐢';
+            } else if (speed > 1.0) {
+                speedText = `Accéléré (${speed}x)`;
+                icon = '🐇';
+            } else {
+                speedText = 'Vitesse normale';
+                icon = '⏱️';
+            }
+
+            showNotification(speedText, icon);
+        }
+
+        // Ajouter des raccourcis clavier pour la vitesse
+        document.addEventListener('keydown', (e) => {
+            // Vérifier si le focus est sur le player ou ses éléments
+            const isPlayerFocused = videoContainer.contains(document.activeElement) ||
+                document.activeElement === document.body;
+
+            if (!isPlayerFocused) return;
+
+            // Raccourcis pour la vitesse: Shift+> pour accélérer, Shift+< pour ralentir
+            if (e.key === '>' && e.shiftKey) {
+                e.preventDefault();
+                const nextSpeed = getNextSpeed(currentSpeed, 'up');
+                changePlaybackSpeed(nextSpeed);
+                showControls();
+            } else if (e.key === '<' && e.shiftKey) {
+                e.preventDefault();
+                const nextSpeed = getNextSpeed(currentSpeed, 'down');
+                changePlaybackSpeed(nextSpeed);
+                showControls();
+            }
+
+            // Touche 'R' pour revenir à la vitesse normale
+            else if (e.code === 'KeyR') {
+                e.preventDefault();
+                changePlaybackSpeed(1.0);
+                showControls();
+            }
+        });
+
+        // Fonction pour obtenir la vitesse suivante dans la liste
+        function getNextSpeed(current, direction) {
+            const speeds = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+            let currentIndex = speeds.indexOf(current);
+            if (currentIndex === -1) {
+                // Si la vitesse actuelle n'est pas dans la liste, trouver l'index le plus proche
+                for (let i = 0; i < speeds.length; i++) {
+                    if (speeds[i] > current) {
+                        currentIndex = i - 1;
+                        break;
+                    }
+                }
+                if (currentIndex === -1) currentIndex = speeds.length - 1;
+            }
+
+            if (direction === 'up') {
+                return speeds[Math.min(currentIndex + 1, speeds.length - 1)];
+            } else {
+                return speeds[Math.max(currentIndex - 1, 0)];
+            }
+        }
+
+        // Initialiser le menu de vitesse avec l'option active par défaut
+        window.addEventListener('load', () => {
+            document.querySelector('.speed-option[data-speed="1.0"]').classList.add('active');
+        });
+
+        // Réinitialiser la vitesse au chargement d'une nouvelle vidéo
+        videoInput.addEventListener('change', (event) => {
+            // Réinitialiser la vitesse
+            changePlaybackSpeed(1.0);
+            speedOptions.forEach(opt => opt.classList.remove('active'));
+            document.querySelector('.speed-option[data-speed="1.0"]').classList.add('active');
         });
     </script>
 </body>
