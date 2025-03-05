@@ -5,41 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lecteur Vidéo Custom</title>
-    <!-- Inclure la feuille de style CSS -->
-    <link rel="stylesheet" href="videoPlayer.css">
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #111;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-    </style>
+
 </head>
 
 <body>
-    <!-- Conteneur pour le lecteur vidéo -->
-    <div id="videoPlayer"></div>
-
-    <!-- Inclure le script JavaScript du lecteur -->
-    <script src="videoPlayer.js"></script>
-    <script>
-        // Initialiser le lecteur vidéo quand la page est chargée
-        document.addEventListener('DOMContentLoaded', function () {
-            // Créer une instance du lecteur vidéo
-            const player = new CustomVideoPlayer('#videoPlayer', {
-                source: 'video.mp4',  // Chemin vers votre vidéo par défaut
-                autoplay: false,
-                muted: false,
-                loop: false,
-                preload: 'auto',
-                controlsHideDelay: 2000
-            });
-        });
-    </script>
+    <!-- https://github.com/shadowforce78/CustomVideoPlayer -->
+     <div class="info">
+        <h1>Custom Video Player</h1>
+        <p>Un lecteur vidéo personnalisé en JavaScript</p>
+        <p>Aller sur le <a href="https://github.com/shadowforce78/CustomVideoPlayer">GitHub</a> du projet</p>
+     </div>
 </body>
 
 </html>
