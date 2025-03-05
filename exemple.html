@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur Vidéo Custom</title>
+    <!-- CSS du lecteur vidéo -->
+    <link rel="stylesheet" href="https://lib.saumondeluxe.com/videoPlayer.css" />
+
+    <!-- Script du lecteur vidéo -->
+    <script src="https://lib.saumondeluxe.com/videoPlayer.js"></script>
+
+</head>
+
+<body>
+    <div id="videoPlayer"></div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const player = new CustomVideoPlayer("#videoPlayer", {
+                source: "./video.mp4",
+            });
+        });
+    </script>
+</body>
+
+</html>
