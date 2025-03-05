@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +19,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Conteneur pour le lecteur vidéo -->
     <div id="videoPlayer"></div>
@@ -26,7 +28,7 @@
     <script src="customVideoPlayer.js"></script>
     <script>
         // Initialiser le lecteur vidéo quand la page est chargée
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Créer une instance du lecteur vidéo
             const player = new CustomVideoPlayer('#videoPlayer', {
                 source: 'video.mp4',  // Chemin vers votre vidéo par défaut
@@ -39,4 +41,5 @@
         });
     </script>
 </body>
+
 </html>
