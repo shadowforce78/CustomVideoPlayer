@@ -24,22 +24,27 @@
 
         video {
             width: 100%;
-            border-radius: 10px 10px 10px 10px; /* Maintenir les arrondis sur tous les coins de la vidéo */
-            display: block; /* Assurer que la vidéo n'a pas de marge inférieure implicite */
+            border-radius: 10px 10px 10px 10px;
+            /* Maintenir les arrondis sur tous les coins de la vidéo */
+            display: block;
+            /* Assurer que la vidéo n'a pas de marge inférieure implicite */
         }
 
         .controls {
             position: absolute;
-            bottom: 0; /* Modifié de 10px à 0 pour éliminer l'espace */
+            bottom: 0;
+            /* Modifié de 10px à 0 pour éliminer l'espace */
             left: 0;
             right: 0;
             background: rgba(0, 0, 0, 0.5);
             padding: 10px;
-            border-radius: 10px 10px 0 0; /* Modifié pour arrondir seulement les coins supérieurs */
+            border-radius: 10px 10px 0 0;
+            /* Modifié pour arrondir seulement les coins supérieurs */
             display: flex;
             flex-direction: column;
             gap: 10px;
-            transition: opacity 0.3s ease; /* Ajout d'une transition pour un effet fluide */
+            transition: opacity 0.3s ease;
+            /* Ajout d'une transition pour un effet fluide */
         }
 
         .progress-container {
@@ -63,7 +68,8 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
-            padding-bottom: 5px; /* Ajouter un peu d'espace entre les boutons et le bord inférieur */
+            padding-bottom: 5px;
+            /* Ajouter un peu d'espace entre les boutons et le bord inférieur */
         }
 
         .left-controls,
@@ -128,14 +134,15 @@
             gap: 10px;
             opacity: 0;
             transition: opacity 0.3s;
-            pointer-events: none; /* Pour ne pas interférer avec les clics */
+            pointer-events: none;
+            /* Pour ne pas interférer avec les clics */
             z-index: 10;
         }
 
         .action-indicator .icon {
             font-size: 30px;
         }
-        
+
         .action-indicator .text {
             font-size: 18px;
         }
@@ -256,7 +263,7 @@
         const settingsBtn = document.getElementById('settingsBtn');
         const qualityMenu = document.getElementById('qualityMenu');
         const qualityOptions = document.querySelectorAll('.quality-option');
-        
+
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
         const controlsHideDelay = 2000; // 2 secondes avant disparition
@@ -266,7 +273,7 @@
         function hideControls() {
             // Ne pas masquer si la vidéo est en pause ou si la souris est sur les contrôles
             if (video.paused || isMouseOverControls) return;
-            
+
             controls.style.opacity = '0';
             // Après la transition, masquer complètement pour empêcher les clics
             setTimeout(() => {
@@ -275,45 +282,45 @@
                 }
             }, 300);
         }
-        
+
         // Fonction pour afficher les contrôles
         function showControls() {
             controls.style.opacity = '1';
             controls.style.pointerEvents = 'auto';
-            
+
             // Réinitialiser le timer
             clearTimeout(controlsTimeout);
             if (!video.paused) {
                 controlsTimeout = setTimeout(hideControls, controlsHideDelay);
             }
         }
-        
+
         // Afficher les contrôles lorsque la souris se déplace sur le conteneur vidéo
         videoContainer.addEventListener('mousemove', showControls);
-        
+
         // Éviter que les contrôles disparaissent lorsque la souris est dessus
         controls.addEventListener('mouseenter', () => {
             isMouseOverControls = true;
             clearTimeout(controlsTimeout);
         });
-        
+
         controls.addEventListener('mouseleave', () => {
             isMouseOverControls = false;
             if (!video.paused) {
                 controlsTimeout = setTimeout(hideControls, controlsHideDelay);
             }
         });
-        
+
         // Assurer que les contrôles sont toujours visibles quand la vidéo est en pause
         video.addEventListener('pause', showControls);
-        
+
         // Démarrer le timer pour masquer les contrôles quand la vidéo est lancée
         video.addEventListener('play', () => {
             if (!isMouseOverControls) {
                 controlsTimeout = setTimeout(hideControls, controlsHideDelay);
             }
         });
-        
+
         // Réinitialiser l'état des contrôles quand la souris quitte le conteneur vidéo
         videoContainer.addEventListener('mouseleave', () => {
             if (!video.paused) {
@@ -336,7 +343,7 @@
 
         // Gestionnaire d'événement pour le bouton play/pause - remplacer l'ancien code par cette fonction
         playPauseBtn.addEventListener('click', togglePlayPause);
-        
+
         // Ajouter le gestionnaire d'événement pour le clic sur la vidéo
         video.addEventListener('click', (e) => {
             // Empêcher la propagation pour éviter de déclencher d'autres événements
@@ -479,17 +486,17 @@
         // Configuration des raccourcis clavier
         document.addEventListener('keydown', (e) => {
             // Vérifier si le focus est sur le player ou ses éléments
-            const isPlayerFocused = videoContainer.contains(document.activeElement) || 
-                                   document.activeElement === document.body;
-            
+            const isPlayerFocused = videoContainer.contains(document.activeElement) ||
+                document.activeElement === document.body;
+
             if (!isPlayerFocused) return;
-            
+
             switch (e.code) {
                 case 'Space': // Barre d'espace pour play/pause
                     e.preventDefault(); // Empêcher le défilement de la page
                     togglePlayPause(); // Utiliser la même fonction
                     break;
-                    
+
                 case 'ArrowRight': // Flèche droite pour avancer
                     e.preventDefault();
                     const forwardSeconds = 5;
@@ -497,7 +504,7 @@
                     updateSeekIndicator('forward', forwardSeconds);
                     showControls(); // Afficher les contrôles lors de l'utilisation des raccourcis
                     break;
-                    
+
                 case 'ArrowLeft': // Flèche gauche pour reculer
                     e.preventDefault();
                     const backwardSeconds = 5;
@@ -505,7 +512,7 @@
                     updateSeekIndicator('backward', backwardSeconds);
                     showControls();
                     break;
-                    
+
                 case 'ArrowUp': // Flèche haut pour augmenter le volume
                     e.preventDefault();
                     // Augmenter le volume de 10%
@@ -515,7 +522,7 @@
                     updateVolumeIndicator();
                     showControls();
                     break;
-                    
+
                 case 'ArrowDown': // Flèche bas pour diminuer le volume
                     e.preventDefault();
                     // Diminuer le volume de 10%
@@ -549,7 +556,7 @@
         const volumeIndicator = document.getElementById('volumeIndicator');
         const seekIndicator = document.getElementById('seekIndicator');
         const volumeFill = document.getElementById('volumeFill');
-        
+
         // Fonction pour afficher un indicateur
         function showIndicator(indicator, duration = 700) {
             indicator.style.opacity = '1';
@@ -557,19 +564,19 @@
                 indicator.style.opacity = '0';
             }, duration);
         }
-        
+
         // Fonction pour mettre à jour l'indicateur de play/pause
         function updatePlayPauseIndicator(isPlaying) {
             playPauseIndicator.querySelector('.icon').textContent = isPlaying ? '▶️' : '⏸️';
             playPauseIndicator.querySelector('.text').textContent = isPlaying ? 'Lecture' : 'Pause';
             showIndicator(playPauseIndicator);
         }
-        
+
         // Fonction pour mettre à jour l'indicateur de volume
         function updateVolumeIndicator() {
             const volumeIcon = volumeIndicator.querySelector('.icon');
             const volumeText = volumeIndicator.querySelector('.text');
-            
+
             if (video.muted || video.volume === 0) {
                 volumeIcon.textContent = '🔇';
                 volumeText.textContent = 'Muet';
@@ -583,15 +590,15 @@
                 volumeText.textContent = `${Math.round(video.volume * 100)}%`;
                 volumeFill.style.width = `${video.volume * 100}%`;
             }
-            
+
             showIndicator(volumeIndicator);
         }
-        
+
         // Fonction pour mettre à jour l'indicateur de recherche
         function updateSeekIndicator(direction, seconds) {
             const seekIcon = seekIndicator.querySelector('.icon');
             const seekText = seekIndicator.querySelector('.text');
-            
+
             if (direction === 'forward') {
                 seekIcon.textContent = '⏩';
                 seekText.textContent = `+${seconds}s`;
@@ -599,7 +606,7 @@
                 seekIcon.textContent = '⏪';
                 seekText.textContent = `-${seconds}s`;
             }
-            
+
             showIndicator(seekIndicator);
         }
 
@@ -610,74 +617,74 @@
             '480p': 'video-480p.mp4',
             '360p': 'video-360p.mp4',
         };
-        
+
         let currentQuality = 'auto';
         let currentVideoFile = null;
         let currentVideoURL = null;
-        
+
         // Gestion du bouton paramètres pour afficher/masquer le menu de qualité
         settingsBtn.addEventListener('click', (e) => {
             e.stopPropagation(); // Empêcher de propager jusqu'au document
-            
+
             // Basculer la visibilité du menu de qualité
             if (qualityMenu.style.display === 'flex') {
                 qualityMenu.style.display = 'none';
             } else {
                 qualityMenu.style.display = 'flex';
-                
+
                 // Positionner correctement le menu par rapport au bouton de paramètres
                 const settingsRect = settingsBtn.getBoundingClientRect();
                 const containerRect = videoContainer.getBoundingClientRect();
-                
+
                 // Calculer la position relative au conteneur vidéo
                 qualityMenu.style.bottom = '60px'; // Position au-dessus des contrôles
                 qualityMenu.style.right = '20px'; // Aligné à droite
             }
         });
-        
+
         // Cacher le menu de qualité quand on clique ailleurs
         document.addEventListener('click', (e) => {
             if (!qualityMenu.contains(e.target) && e.target !== settingsBtn) {
                 qualityMenu.style.display = 'none';
             }
         });
-        
+
         // Gérer la sélection de qualité
         qualityOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const quality = option.getAttribute('data-quality');
                 changeVideoQuality(quality);
-                
+
                 // Marquer l'option active
                 qualityOptions.forEach(opt => opt.classList.remove('active'));
                 option.classList.add('active');
-                
+
                 // Fermer le menu après sélection
                 qualityMenu.style.display = 'none';
             });
         });
-        
+
         // Fonction pour changer la qualité de la vidéo
         function changeVideoQuality(quality) {
             if (quality === currentQuality || !currentVideoFile) return;
-            
+
             // Sauvegarder la position actuelle pour reprendre au même endroit
             const currentTime = video.currentTime;
             const isPaused = video.paused;
-            
+
             // Dans le cas d'un fichier local uploadé par l'utilisateur
             if (currentVideoFile) {
                 // Pour une implémentation réelle, vous auriez différentes sources
                 // Ici, on simule juste un changement de qualité
                 console.log(`Changement de qualité vers ${quality}`);
-                
+
                 // Mise à jour de la qualité courante
                 currentQuality = quality;
-                
+
                 // Dans une vraie implémentation, on changerait la source de la vidéo ici
                 // Pour simuler, afficher un message dans la console
                 console.log(`Actuellement en train de lire en ${quality}`);
-                
+
                 // Informer l'utilisateur du changement
                 showQualityChangeNotification(quality);
             } else if (videoQualities[quality]) {
@@ -686,7 +693,7 @@
                 currentQuality = quality;
                 showQualityChangeNotification(quality);
             }
-            
+
             // Restaurer la position de lecture et l'état play/pause
             video.addEventListener('loadedmetadata', function onceLoaded() {
                 video.currentTime = currentTime;
@@ -696,21 +703,21 @@
                 video.removeEventListener('loadedmetadata', onceLoaded);
             });
         }
-        
+
         // Fonction pour afficher une notification de changement de qualité
         function showQualityChangeNotification(quality) {
             // Créer un élément de notification temporaire
             const notification = document.createElement('div');
             notification.className = 'action-indicator';
             notification.style.opacity = '1';
-            
+
             notification.innerHTML = `
                 <span class="icon">⚙️</span>
                 <span class="text">Qualité: ${quality}</span>
             `;
-            
+
             videoContainer.appendChild(notification);
-            
+
             // Faire disparaître la notification après un délai
             setTimeout(() => {
                 notification.style.opacity = '0';
@@ -719,28 +726,28 @@
                 }, 300);
             }, 2000);
         }
-        
+
         // Modifier le gestionnaire d'événements pour les fichiers chargés
         videoInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
-            
+
             if (file) {
                 // Stocker le fichier courrant pour la gestion de qualité
                 currentVideoFile = file;
-                
+
                 // Révoquer l'ancien URL si existant
                 if (currentVideoURL) {
                     URL.revokeObjectURL(currentVideoURL);
                 }
-                
+
                 currentVideoURL = URL.createObjectURL(file);
                 video.src = currentVideoURL;
-                
+
                 // Réinitialiser l'état
                 video.pause();
                 playPauseBtn.textContent = '▶️';
                 progressBar.style.width = '0%';
-                
+
                 // Réinitialiser la qualité
                 currentQuality = 'auto';
                 qualityOptions.forEach(opt => opt.classList.remove('active'));
