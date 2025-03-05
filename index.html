@@ -275,8 +275,8 @@
             }
         });
 
-        // Play/Pause functionality
-        playPauseBtn.addEventListener('click', () => {
+        // Fonction pour basculer entre lecture et pause
+        function togglePlayPause() {
             if (video.paused) {
                 video.play();
                 playPauseBtn.textContent = '⏸️';
@@ -286,6 +286,16 @@
                 playPauseBtn.textContent = '▶️';
                 updatePlayPauseIndicator(false);
             }
+        }
+
+        // Gestionnaire d'événement pour le bouton play/pause - remplacer l'ancien code par cette fonction
+        playPauseBtn.addEventListener('click', togglePlayPause);
+        
+        // Ajouter le gestionnaire d'événement pour le clic sur la vidéo
+        video.addEventListener('click', (e) => {
+            // Empêcher la propagation pour éviter de déclencher d'autres événements
+            e.stopPropagation();
+            togglePlayPause();
         });
 
         // Load video functionality
@@ -431,15 +441,7 @@
             switch (e.code) {
                 case 'Space': // Barre d'espace pour play/pause
                     e.preventDefault(); // Empêcher le défilement de la page
-                    if (video.paused) {
-                        video.play();
-                        playPauseBtn.textContent = '⏸️';
-                        updatePlayPauseIndicator(true);
-                    } else {
-                        video.pause();
-                        playPauseBtn.textContent = '▶️';
-                        updatePlayPauseIndicator(false);
-                    }
+                    togglePlayPause(); // Utiliser la même fonction
                     break;
                     
                 case 'ArrowRight': // Flèche droite pour avancer
