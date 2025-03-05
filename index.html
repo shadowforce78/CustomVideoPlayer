@@ -195,6 +195,15 @@
         .settings-btn {
             cursor: pointer;
         }
+
+        /* Style pour l'affichage du temps */
+        .time-display {
+            color: white;
+            font-size: 14px;
+            margin-left: 15px;
+            min-width: 100px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -226,6 +235,8 @@
                     <button id="playPause">▶️</button>
                     <button id="loadVideo">📁</button>
                     <input type="file" id="videoInput" class="file-input" accept="video/*">
+                    <!-- Ajout de l'affichage du temps -->
+                    <div class="time-display" id="timeDisplay">0:00 / 0:00</div>
                 </div>
                 <div class="right-controls">
                     <div class="volume-control">
@@ -263,6 +274,7 @@
         const settingsBtn = document.getElementById('settingsBtn');
         const qualityMenu = document.getElementById('qualityMenu');
         const qualityOptions = document.querySelectorAll('.quality-option');
+        const timeDisplay = document.getElementById('timeDisplay');
 
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
@@ -373,6 +385,7 @@
         video.addEventListener('timeupdate', () => {
             const percentage = (video.currentTime / video.duration) * 100;
             progressBar.style.width = `${percentage}%`;
+            updateTimeDisplay();
         });
 
         progressContainer.addEventListener('click', (e) => {
@@ -380,10 +393,12 @@
             const clickPosition = (e.clientX - rect.left) / rect.width;
 
             video.currentTime = clickPosition * video.duration;
+            updateTimeDisplay();
         });
 
         video.addEventListener('loadedmetadata', () => {
             progressBar.style.width = '0%';
+            updateTimeDisplay();
         });
 
         // Volume control functionality
@@ -502,6 +517,7 @@
                     const forwardSeconds = 5;
                     video.currentTime = Math.min(video.currentTime + forwardSeconds, video.duration);
                     updateSeekIndicator('forward', forwardSeconds);
+                    updateTimeDisplay();
                     showControls(); // Afficher les contrôles lors de l'utilisation des raccourcis
                     break;
 
@@ -510,6 +526,7 @@
                     const backwardSeconds = 5;
                     video.currentTime = Math.max(video.currentTime - backwardSeconds, 0);
                     updateSeekIndicator('backward', backwardSeconds);
+                    updateTimeDisplay();
                     showControls();
                     break;
 
@@ -697,6 +714,7 @@
             // Restaurer la position de lecture et l'état play/pause
             video.addEventListener('loadedmetadata', function onceLoaded() {
                 video.currentTime = currentTime;
+                updateTimeDisplay();
                 if (!isPaused) {
                     video.play();
                 }
@@ -754,6 +772,20 @@
                 document.querySelector('[data-quality="auto"]').classList.add('active');
             }
         });
+
+        // Fonction pour formater le temps (convertir secondes en format MM:SS)
+        function formatTime(timeInSeconds) {
+            const minutes = Math.floor(timeInSeconds / 60);
+            const seconds = Math.floor(timeInSeconds % 60);
+            return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        }
+
+        // Mise à jour de l'affichage du temps
+        function updateTimeDisplay() {
+            const currentTime = formatTime(video.currentTime);
+            const duration = formatTime(video.duration || 0);
+            timeDisplay.textContent = `${currentTime} / ${duration}`;
+        }
     </script>
 </body>
 
