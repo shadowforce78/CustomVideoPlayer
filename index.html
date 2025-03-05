@@ -154,6 +154,40 @@
             background-color: #f00;
             width: 0%;
         }
+
+        /* Styles pour le menu de qualité */
+        .quality-menu {
+            position: absolute;
+            bottom: 60px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            padding: 10px;
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 20;
+        }
+
+        .quality-option {
+            color: white;
+            padding: 5px 15px;
+            cursor: pointer;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+
+        .quality-option:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .quality-option.active {
+            background-color: rgba(255, 0, 0, 0.6);
+        }
+
+        .settings-btn {
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -192,9 +226,18 @@
                         <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1"
                             value="1">
                     </div>
+                    <button id="settingsBtn" class="settings-btn">⚙️</button>
                     <button id="fullscreenBtn" class="fullscreen-btn">⛶</button>
                 </div>
             </div>
+        </div>
+        <!-- Ajouter le menu de qualité -->
+        <div class="quality-menu" id="qualityMenu">
+            <div class="quality-option" data-quality="auto">Auto</div>
+            <div class="quality-option" data-quality="1080p">1080p</div>
+            <div class="quality-option" data-quality="720p">720p</div>
+            <div class="quality-option" data-quality="480p">480p</div>
+            <div class="quality-option" data-quality="360p">360p</div>
         </div>
     </div>
 
@@ -210,6 +253,9 @@
         const fullscreenBtn = document.getElementById('fullscreenBtn');
         const videoContainer = document.getElementById('videoContainer');
         const controls = document.querySelector('.controls');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const qualityMenu = document.getElementById('qualityMenu');
+        const qualityOptions = document.querySelectorAll('.quality-option');
         
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
@@ -556,6 +602,151 @@
             
             showIndicator(seekIndicator);
         }
+
+        // Simulation des différentes sources de qualité
+        const videoQualities = {
+            '1080p': 'video-1080p.mp4',
+            '720p': 'video-720p.mp4',
+            '480p': 'video-480p.mp4',
+            '360p': 'video-360p.mp4',
+        };
+        
+        let currentQuality = 'auto';
+        let currentVideoFile = null;
+        let currentVideoURL = null;
+        
+        // Gestion du bouton paramètres pour afficher/masquer le menu de qualité
+        settingsBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Empêcher de propager jusqu'au document
+            
+            // Basculer la visibilité du menu de qualité
+            if (qualityMenu.style.display === 'flex') {
+                qualityMenu.style.display = 'none';
+            } else {
+                qualityMenu.style.display = 'flex';
+                
+                // Positionner correctement le menu par rapport au bouton de paramètres
+                const settingsRect = settingsBtn.getBoundingClientRect();
+                const containerRect = videoContainer.getBoundingClientRect();
+                
+                // Calculer la position relative au conteneur vidéo
+                qualityMenu.style.bottom = '60px'; // Position au-dessus des contrôles
+                qualityMenu.style.right = '20px'; // Aligné à droite
+            }
+        });
+        
+        // Cacher le menu de qualité quand on clique ailleurs
+        document.addEventListener('click', (e) => {
+            if (!qualityMenu.contains(e.target) && e.target !== settingsBtn) {
+                qualityMenu.style.display = 'none';
+            }
+        });
+        
+        // Gérer la sélection de qualité
+        qualityOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                const quality = option.getAttribute('data-quality');
+                changeVideoQuality(quality);
+                
+                // Marquer l'option active
+                qualityOptions.forEach(opt => opt.classList.remove('active'));
+                option.classList.add('active');
+                
+                // Fermer le menu après sélection
+                qualityMenu.style.display = 'none';
+            });
+        });
+        
+        // Fonction pour changer la qualité de la vidéo
+        function changeVideoQuality(quality) {
+            if (quality === currentQuality || !currentVideoFile) return;
+            
+            // Sauvegarder la position actuelle pour reprendre au même endroit
+            const currentTime = video.currentTime;
+            const isPaused = video.paused;
+            
+            // Dans le cas d'un fichier local uploadé par l'utilisateur
+            if (currentVideoFile) {
+                // Pour une implémentation réelle, vous auriez différentes sources
+                // Ici, on simule juste un changement de qualité
+                console.log(`Changement de qualité vers ${quality}`);
+                
+                // Mise à jour de la qualité courante
+                currentQuality = quality;
+                
+                // Dans une vraie implémentation, on changerait la source de la vidéo ici
+                // Pour simuler, afficher un message dans la console
+                console.log(`Actuellement en train de lire en ${quality}`);
+                
+                // Informer l'utilisateur du changement
+                showQualityChangeNotification(quality);
+            } else if (videoQualities[quality]) {
+                // Si nous avons des vidéos prédéfinies avec différentes qualités
+                video.src = videoQualities[quality];
+                currentQuality = quality;
+                showQualityChangeNotification(quality);
+            }
+            
+            // Restaurer la position de lecture et l'état play/pause
+            video.addEventListener('loadedmetadata', function onceLoaded() {
+                video.currentTime = currentTime;
+                if (!isPaused) {
+                    video.play();
+                }
+                video.removeEventListener('loadedmetadata', onceLoaded);
+            });
+        }
+        
+        // Fonction pour afficher une notification de changement de qualité
+        function showQualityChangeNotification(quality) {
+            // Créer un élément de notification temporaire
+            const notification = document.createElement('div');
+            notification.className = 'action-indicator';
+            notification.style.opacity = '1';
+            
+            notification.innerHTML = `
+                <span class="icon">⚙️</span>
+                <span class="text">Qualité: ${quality}</span>
+            `;
+            
+            videoContainer.appendChild(notification);
+            
+            // Faire disparaître la notification après un délai
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    videoContainer.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+        
+        // Modifier le gestionnaire d'événements pour les fichiers chargés
+        videoInput.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            
+            if (file) {
+                // Stocker le fichier courrant pour la gestion de qualité
+                currentVideoFile = file;
+                
+                // Révoquer l'ancien URL si existant
+                if (currentVideoURL) {
+                    URL.revokeObjectURL(currentVideoURL);
+                }
+                
+                currentVideoURL = URL.createObjectURL(file);
+                video.src = currentVideoURL;
+                
+                // Réinitialiser l'état
+                video.pause();
+                playPauseBtn.textContent = '▶️';
+                progressBar.style.width = '0%';
+                
+                // Réinitialiser la qualité
+                currentQuality = 'auto';
+                qualityOptions.forEach(opt => opt.classList.remove('active'));
+                document.querySelector('[data-quality="auto"]').classList.add('active');
+            }
+        });
     </script>
 </body>
 
