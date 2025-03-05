@@ -224,12 +224,8 @@ Note : Certaines fonctionnalités comme le Picture-in-Picture peuvent ne pas êt
 
 ## Support
 
-Pour toute question ou assistance, n'hésitez pas à [créer une issue](https://github.com/saumondeluxe/CustomVideoPlayer/issues) sur le dépôt GitHub ou à contacter directement [contact@saumondeluxe.com](mailto:contact@saumondeluxe.com).
+Pour toute question ou assistance, n'hésitez pas à [créer une issue](https://github.com/shadowforce78/CustomVideoPlayer/issues) sur le dépôt GitHub ou à contacter directement [contact@saumondeluxe.com](mailto:contact@saumondeluxe.com).
 
 ## Licence
 
 Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus d'informations.
-
-```
-
-```
