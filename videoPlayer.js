@@ -29,6 +29,7 @@ class CustomVideoPlayer {
             loop: false,
             preload: 'auto',
             controlsHideDelay: 2000,
+            allowVideoSelection: true, // Nouvelle option pour activer/désactiver la sélection de vidéo
             source: options.source || null,
             poster: options.poster || null,
             ...options
@@ -131,13 +132,19 @@ class CustomVideoPlayer {
         this.leftControls.className = 'left-controls';
         
         this.playPauseBtn = this.createButton('playPause', '▶️', 'Lecture/Pause');
-        this.loadVideoBtn = this.createButton('loadVideo', '📁', 'Charger une vidéo');
         
-        this.videoInput = document.createElement('input');
-        this.videoInput.type = 'file';
-        this.videoInput.id = 'videoInput';
-        this.videoInput.className = 'file-input';
-        this.videoInput.accept = 'video/*';
+        if (this.options.allowVideoSelection) {
+            this.loadVideoBtn = this.createButton('loadVideo', '📁', 'Charger une vidéo');
+            
+            this.videoInput = document.createElement('input');
+            this.videoInput.type = 'file';
+            this.videoInput.id = 'videoInput';
+            this.videoInput.className = 'file-input';
+            this.videoInput.accept = 'video/*';
+            
+            this.leftControls.appendChild(this.loadVideoBtn);
+            this.leftControls.appendChild(this.videoInput);
+        }
         
         this.timeDisplay = document.createElement('div');
         this.timeDisplay.className = 'time-display';
@@ -147,8 +154,6 @@ class CustomVideoPlayer {
         this.speedBtn = this.createButton('speedBtn', '1x', 'Vitesse de lecture', 'speed-btn');
         
         this.leftControls.appendChild(this.playPauseBtn);
-        this.leftControls.appendChild(this.loadVideoBtn);
-        this.leftControls.appendChild(this.videoInput);
         this.leftControls.appendChild(this.timeDisplay);
         this.leftControls.appendChild(this.speedBtn);
         
@@ -307,8 +312,10 @@ class CustomVideoPlayer {
         });
         
         // Chargement de vidéo
-        this.loadVideoBtn.addEventListener('click', () => this.videoInput.click());
-        this.videoInput.addEventListener('change', (e) => this.handleVideoUpload(e));
+        if (this.options.allowVideoSelection) {
+            this.loadVideoBtn.addEventListener('click', () => this.videoInput.click());
+            this.videoInput.addEventListener('change', (e) => this.handleVideoUpload(e));
+        }
         
         // Barre de progression
         this.video.addEventListener('timeupdate', () => this.updateProgressBar());
