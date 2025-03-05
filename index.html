@@ -251,6 +251,16 @@
             font-size: 12px;
             font-weight: bold;
         }
+
+        /* Style pour le bouton PiP */
+        .pip-btn {
+            margin-left: 5px;
+        }
+        
+        /* Adaptation pour ajouter de l'espace dans les contrôles droits */
+        .right-controls {
+            flex-wrap: wrap; /* Permet aux contrôles de passer à la ligne si besoin */
+        }
     </style>
 </head>
 
@@ -300,6 +310,7 @@
                         <input type="range" id="volumeSlider" class="volume-slider" min="0" max="1" step="0.1"
                             value="1">
                     </div>
+                    <button id="pipBtn" class="pip-btn" title="Picture-in-Picture">📺</button>
                     <button id="settingsBtn" class="settings-btn">⚙️</button>
                     <button id="fullscreenBtn" class="fullscreen-btn">⛶</button>
                 </div>
@@ -334,6 +345,7 @@
         const previewContainer = document.getElementById('previewContainer');
         const previewThumbnail = document.getElementById('previewThumbnail');
         const previewTime = document.getElementById('previewTime');
+        const pipBtn = document.getElementById('pipBtn');
 
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
@@ -1007,6 +1019,97 @@
             setTimeout(() => {
                 generateThumbnails();
             }, 1000);
+        });
+
+        // Fonction pour vérifier si le Picture-in-Picture est supporté
+        function isPictureInPictureSupported() {
+            return document.pictureInPictureEnabled && !video.disablePictureInPicture;
+        }
+        
+        // Fonction pour basculer le mode Picture-in-Picture
+        async function togglePictureInPicture() {
+            try {
+                if (!isPictureInPictureSupported()) {
+                    showNotification('Picture-in-Picture non supporté par votre navigateur', '⚠️');
+                    return;
+                }
+                
+                if (document.pictureInPictureElement) {
+                    // Si déjà en mode PiP, sortir du mode
+                    await document.exitPictureInPicture();
+                } else {
+                    // Sinon activer le mode PiP
+                    await video.requestPictureInPicture();
+                }
+            } catch (error) {
+                console.error('Erreur lors de la bascule en mode Picture-in-Picture:', error);
+                showNotification('Erreur: ' + error.message, '⚠️');
+            }
+        }
+        
+        // Gestionnaire d'événements pour le bouton PiP
+        pipBtn.addEventListener('click', togglePictureInPicture);
+        
+        // Mise à jour de l'état du bouton PiP quand l'état change
+        video.addEventListener('enterpictureinpicture', () => {
+            pipBtn.textContent = '⏏️'; // Icône pour sortir du mode PiP
+            pipBtn.title = 'Quitter le Picture-in-Picture';
+            showNotification('Picture-in-Picture activé', '📺');
+        });
+        
+        video.addEventListener('leavepictureinpicture', () => {
+            pipBtn.textContent = '📺'; // Icône pour entrer en mode PiP
+            pipBtn.title = 'Picture-in-Picture';
+            showNotification('Picture-in-Picture désactivé', '📺');
+        });
+        
+        // Désactiver le bouton PiP s'il n'est pas supporté
+        window.addEventListener('load', () => {
+            if (!isPictureInPictureSupported()) {
+                pipBtn.disabled = true;
+                pipBtn.title = 'Picture-in-Picture non supporté';
+                pipBtn.style.opacity = '0.5';
+            }
+        });
+        
+        // Fonction pour afficher une notification générique
+        function showNotification(message, icon = '📌') {
+            // Créer un élément de notification temporaire (réutiliser le style des indicateurs d'action)
+            const notification = document.createElement('div');
+            notification.className = 'action-indicator';
+            notification.style.opacity = '1';
+            
+            notification.innerHTML = `
+                <span class="icon">${icon}</span>
+                <span class="text">${message}</span>
+            `;
+            
+            videoContainer.appendChild(notification);
+            
+            // Faire disparaître la notification après un délai
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    videoContainer.removeChild(notification);
+                }, 300);
+            }, 2000);
+        }
+        
+        // Ajouter un raccourci clavier pour le mode PiP (touche 'P')
+        document.addEventListener('keydown', (e) => {
+            // Vérifier si le focus est sur le player ou ses éléments
+            const isPlayerFocused = videoContainer.contains(document.activeElement) ||
+                                   document.activeElement === document.body;
+            
+            if (!isPlayerFocused) return;
+            
+            if (e.code === 'KeyP') {
+                e.preventDefault();
+                togglePictureInPicture();
+                showControls();
+            }
+            
+            // ...existing code for other keyboard shortcuts...
         });
     </script>
 </body>
