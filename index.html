@@ -54,6 +54,7 @@
             border-radius: 4px;
             cursor: pointer;
             position: relative;
+            margin-bottom: 5px; /* Espace pour la prévisualisation */
         }
 
         .progress-bar {
@@ -204,6 +205,52 @@
             min-width: 100px;
             text-align: center;
         }
+
+        /* Styles pour la prévisualisation au survol */
+        .preview-container {
+            position: absolute;
+            bottom: 30px; /* Position au-dessus de la barre de progression */
+            background-color: rgba(0, 0, 0, 0.8);
+            border-radius: 4px;
+            padding: 5px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            transform: translateX(-50%);
+            z-index: 30;
+            pointer-events: none; /* Évite d'interférer avec les interactions */
+        }
+
+        .preview-thumbnail {
+            width: 160px;
+            height: 90px;
+            background-color: #333;
+            border: 1px solid #555;
+            margin-bottom: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+            overflow: hidden; /* Pour s'assurer que l'image reste dans le cadre */
+        }
+
+        .preview-thumbnail img, .preview-thumbnail canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* S'assurer que l'image remplit bien le cadre */
+        }
+
+        /* Canvas caché utilisé pour l'extraction de frames */
+        #thumbnailCanvas {
+            display: none;
+        }
+
+        .preview-time {
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -226,6 +273,15 @@
             <span class="icon">⏩</span>
             <span class="text">+5s</span>
         </div>
+        <!-- Ajout du conteneur de prévisualisation -->
+        <div class="preview-container" id="previewContainer">
+            <div class="preview-thumbnail" id="previewThumbnail">
+                <!-- Le contenu sera défini dynamiquement -->
+            </div>
+            <div class="preview-time" id="previewTime">0:00</div>
+        </div>
+        <!-- Canvas caché pour l'extraction de frames -->
+        <canvas id="thumbnailCanvas"></canvas>
         <div class="controls">
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar" id="progressBar"></div>
@@ -275,6 +331,9 @@
         const qualityMenu = document.getElementById('qualityMenu');
         const qualityOptions = document.querySelectorAll('.quality-option');
         const timeDisplay = document.getElementById('timeDisplay');
+        const previewContainer = document.getElementById('previewContainer');
+        const previewThumbnail = document.getElementById('previewThumbnail');
+        const previewTime = document.getElementById('previewTime');
 
         // Variables pour gérer l'auto-hide des contrôles
         let controlsTimeout;
@@ -399,6 +458,10 @@
         video.addEventListener('loadedmetadata', () => {
             progressBar.style.width = '0%';
             updateTimeDisplay();
+            
+            // Configurer la prévisualisation pour le fichier nouvellement chargé
+            // (pour une implémentation réelle, nous générerions ici les vignettes de prévisualisation)
+            previewThumbnail.innerHTML = 'Prévisualisation<br>(survol pour voir)';
         });
 
         // Volume control functionality
@@ -770,6 +833,11 @@
                 currentQuality = 'auto';
                 qualityOptions.forEach(opt => opt.classList.remove('active'));
                 document.querySelector('[data-quality="auto"]').classList.add('active');
+
+                // Réinitialiser le cache des vignettes
+                for (let key in thumbnails) {
+                    delete thumbnails[key];
+                }
             }
         });
 
@@ -786,6 +854,160 @@
             const duration = formatTime(video.duration || 0);
             timeDisplay.textContent = `${currentTime} / ${duration}`;
         }
+
+        // Gestion de la prévisualisation au survol de la barre de progression
+        progressContainer.addEventListener('mousemove', (e) => {
+            // Afficher la prévisualisation
+            previewContainer.style.display = 'flex';
+            
+            // Calculer la position relative du curseur dans la barre de progression
+            const rect = progressContainer.getBoundingClientRect();
+            const position = (e.clientX - rect.left) / rect.width;
+            
+            // Calculer la position horizontale de la prévisualisation
+            const previewX = e.clientX - rect.left;
+            previewContainer.style.left = `${previewX}px`;
+            
+            // Calculer le temps correspondant à la position
+            const previewTimeInSeconds = video.duration * position;
+            
+            // Mettre à jour l'affichage du temps de prévisualisation
+            previewTime.textContent = formatTime(previewTimeInSeconds);
+            
+            // Essayer d'extraire une vignette pour ce temps
+            extractThumbnail(previewTimeInSeconds).then(dataURL => {
+                if (dataURL) {
+                    // Si une vignette est disponible, l'afficher
+                    previewThumbnail.innerHTML = `<img src="${dataURL}" alt="Prévisualisation">`;
+                } else {
+                    // Sinon, afficher un message
+                    previewThumbnail.innerHTML = `Chargement...`;
+                }
+            });
+        });
+        
+        // Cacher la prévisualisation quand la souris quitte la barre de progression
+        progressContainer.addEventListener('mouseleave', () => {
+            previewContainer.style.display = 'none';
+        });
+        
+        // Assurer que la prévisualisation disparaît lors du clic sur la barre de progression
+        progressContainer.addEventListener('click', () => {
+            // Un court délai pour permettre de voir un aperçu rapide de la position sélectionnée
+            setTimeout(() => {
+                previewContainer.style.display = 'none';
+            }, 200);
+        });
+
+        // Définir les nouvelles constantes pour l'extraction d'images
+        const thumbnailCanvas = document.getElementById('thumbnailCanvas');
+        const thumbnailContext = thumbnailCanvas.getContext('2d');
+        
+        // Stockage des vignettes générées pour éviter de les recalculer
+        const thumbnails = {};
+        
+        // Configuration pour l'extraction de frames
+        const thumbnailWidth = 160;
+        const thumbnailHeight = 90;
+
+        // Initialiser le canvas avec les dimensions souhaitées
+        thumbnailCanvas.width = thumbnailWidth;
+        thumbnailCanvas.height = thumbnailHeight;
+        
+        // Fonction pour extraire une frame de la vidéo à un moment donné
+        function extractThumbnail(time) {
+            // Vérifier si la vignette est déjà extraite pour ce temps
+            const roundedTime = Math.floor(time);
+            if (thumbnails[roundedTime]) {
+                return thumbnails[roundedTime];
+            }
+            
+            // Si la vidéo n'est pas chargée ou la durée est invalide, retourner null
+            if (!video.duration || isNaN(video.duration) || time > video.duration) {
+                return null;
+            }
+            
+            try {
+                // Stocker la position actuelle de lecture
+                const currentTime = video.currentTime;
+                const isPaused = video.paused;
+                
+                // Créer un élément vidéo temporaire pour ne pas perturber la lecture actuelle
+                const tempVideo = document.createElement('video');
+                tempVideo.src = video.src;
+                tempVideo.currentTime = time;
+                
+                // Définir une promesse pour attendre que la vidéo soit prête
+                return new Promise((resolve) => {
+                    tempVideo.addEventListener('loadeddata', function onLoaded() {
+                        // Dessiner la frame sur le canvas
+                        thumbnailContext.drawImage(tempVideo, 0, 0, thumbnailWidth, thumbnailHeight);
+                        
+                        // Convertir le canvas en URL de données
+                        const dataURL = thumbnailCanvas.toDataURL('image/jpeg');
+                        
+                        // Stocker l'URL pour une utilisation future
+                        thumbnails[roundedTime] = dataURL;
+                        
+                        // Nettoyer
+                        tempVideo.removeEventListener('loadeddata', onLoaded);
+                        tempVideo.pause();
+                        tempVideo.src = '';
+                        tempVideo.load();
+                        
+                        resolve(dataURL);
+                    });
+                    
+                    // Gérer le cas où le chargement échoue
+                    tempVideo.addEventListener('error', () => {
+                        resolve(null);
+                    });
+                    
+                    // Démarrer le chargement de la vidéo
+                    tempVideo.load();
+                });
+            } catch (error) {
+                console.error('Erreur lors de l\'extraction de la vignette:', error);
+                return null;
+            }
+        }
+        
+        // Fonction pour précalculer des vignettes à intervalles réguliers
+        function generateThumbnails() {
+            if (!video.duration || isNaN(video.duration)) return;
+            
+            // Générer des vignettes tous les 5% de la vidéo (ou à un autre intervalle)
+            const interval = Math.max(5, Math.floor(video.duration / 20));
+            
+            // Utiliser setTimeout pour ne pas bloquer l'interface
+            let i = 0;
+            function generateNext() {
+                const time = i * interval;
+                if (time < video.duration) {
+                    extractThumbnail(time).then(() => {
+                        i++;
+                        setTimeout(generateNext, 100);
+                    });
+                }
+            }
+            
+            // Commencer le processus de génération
+            generateNext();
+        }
+
+        // Amélioration de l'initialisation pour la prévisualisation avec des vignettes
+        video.addEventListener('loadedmetadata', () => {
+            progressBar.style.width = '0%';
+            updateTimeDisplay();
+            
+            // Message initial
+            previewThumbnail.innerHTML = 'Chargement des vignettes...';
+            
+            // Commencer à générer les vignettes après un court délai
+            setTimeout(() => {
+                generateThumbnails();
+            }, 1000);
+        });
     </script>
 </body>
 
