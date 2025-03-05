@@ -86,6 +86,9 @@ const player = new CustomVideoPlayer("#votreConteneurID", {
 
   // Délai avant masquage des contrôles (en ms)
   controlsHideDelay: 2000,
+
+  // Autoriser la sélection de vidéos
+  allowVideoSelection: true,
 });
 ```
 
